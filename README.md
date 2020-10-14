@@ -1,2 +1,2 @@
 # fullstackopen
-My solutions for the assignments of fullstackopen - A MOOC by the University of Helsinki.
+My solutions for the assignments of FullStackOpen, a MOOC by the University of Helsinki.
