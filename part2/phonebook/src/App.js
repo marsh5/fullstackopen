@@ -1,77 +1,87 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const Filter = ({ filter, handleFilter }) => {
-
-  return(
-    <div>
-      filter shown with<input value={filter} onChange = {handleFilter}/>
-    </div>
-  )
-}
-
-const PersonForm = ({ addRecord, newName, newNumber, handleNameChange, handleNumberChange }) => {
-
-  return(
-    <form onSubmit={addRecord}>
-    <div>
-      name: <input value={newName} onChange ={handleNameChange}/>
-    </div>
-    <div>
-      number: <input value={newNumber} onChange ={handleNumberChange}/>
-    </div>
-    <div>
-      <button type="submit">add</button>
-    </div>
-  </form>
-  )
-}
-
-const Persons = ({ persons, filter}) =>{
-  return(
-    persons.map(el => {
-    let x = el.name.toLowerCase()
-    if(x.includes(filter.toLowerCase())){
-     return(
-       <div key={el.id}>{el.name} {el.number}</div>
-       )} else{
-         return null
-       }
-      
-      }))
-}
+import personService from './services/persons';
+import Notification from './components/Notifcation';
+import Filter from './components/Filter';
+import PersonForm from './components/PersonForm';
+import Persons from './components/Persons';
 
 const App = () => {
   const [ persons, setPersons ] = useState([]); 
   const [ newName, setNewName ] = useState('');
   const [ newNumber, setNewNumber ] = useState('');
   const [ filter, setFilter] = useState('');
+  const [ errorMessage, setErrorMessage ] = useState(null);
 
   useEffect(()=> {
-    axios
-    .get('http://localhost:3001/persons')
-    .then(response => {
-      console.log(response.data);
-      setPersons(response.data);
-    })
+      personService.getPersons()
+      .then(data => {
+        setPersons(data);
+      })
+      
   },[]);
 
   const addRecord = (event) => {
     event.preventDefault();
-    if(persons.filter((cur)=> cur.name.toLowerCase() === newName.toLowerCase()).length !== 0){
-      alert(`${newName} is already added to the phonebook`);
-      setNewName('');
-      return
+    const person = persons.filter((cur)=> cur.name.toLowerCase() === newName.toLowerCase());
+    if(person.length !== 0){
+      if(window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)){
+        const id = person[0].id;
+        const changedPerson = { ...person[0], number: newNumber}
+        console.log(id);
+        personService.update(id, changedPerson)
+        .then(data => {
+          setPersons(persons.map(el => el.id === id ? data : el))
+          setErrorMessage(`${changedPerson.name}'s number has changed`);
+          setTimeout(()=> {
+            setErrorMessage(null)
+        }, 5000)
+          setNewName('');
+          setNewNumber('');
+        })
+        .catch(error => {
+          setErrorMessage(`Information of ${changedPerson.name} has already been removed from the server`);
+          setTimeout(()=> {
+            setErrorMessage(null)
+            }, 5000)
+        })
+          return
+        }else{
+          return
+        }
+      }
+      const newObj = {
+        name: newName,
+        number: newNumber
+      }
+        personService.create(newObj)
+          .then(data=> {
+            setPersons(persons.concat(data));
+            setNewNumber('');
+            setNewName('');
+            setErrorMessage(`${data.name} has been added`);
+          setTimeout(()=> {
+            setErrorMessage(null)
+        }, 5000)
+        })
     }
-    
-    const newObj = {
-      name: newName,
-      number: newNumber,
-      id: persons.length + 1
+
+    const handleDelete = (event) => {
+      const id = parseInt(event.target.value);
+      const curPer = persons.find(cur => cur.id === id);
+
+      if(window.confirm(`Delete ${curPer.name}?`)){
+        personService.deletePerson(id, curPer)
+      .then(setPersons(persons.filter(cur => cur.id !== id)))
+      .catch(error => {
+        setErrorMessage(
+          `Information of ${curPer.name} has already been removed from the server`
+        )
+        setTimeout(()=> {
+          setErrorMessage(null)
+      }, 5000)
+      
     }
-    setPersons(persons.concat(newObj));
-    setNewNumber('');
-    setNewName('');
+    )}
   }
 
   const handleNameChange = (event) => {
@@ -89,6 +99,8 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+
+      <Notification message={errorMessage} />
       <Filter filter = {filter} handleFilter = {handleFilter} />
         
       <h2>Add a new</h2>
@@ -102,7 +114,7 @@ const App = () => {
     
       <h2>Numbers</h2>
        <div>
-       <Persons persons = {persons} filter = {filter}/>
+       <Persons persons = {persons} filter = {filter} handleDelete = {handleDelete}/>
        </div>
     </div>
   )
