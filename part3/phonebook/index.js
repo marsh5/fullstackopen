@@ -2,7 +2,6 @@
 const express = require('express');
 const morgan = require('morgan');
 const app = express();
-// const cors = require('cors');
 
 // Configure morgan to log body of POST request
 morgan.token('person', (req) => {
@@ -10,7 +9,6 @@ morgan.token('person', (req) => {
     return null
   })
 app.use(express.static('build'))
-// app.use(cors());
 
 app.use(express.json());
 // app.use(morgan.token('type', function (req, res){
