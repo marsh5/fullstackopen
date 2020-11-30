@@ -44,7 +44,6 @@ const noteSchema = new mongoose.Schema({
 
   
   
-  
 //   Note.find({}).then(result => {
 //       result.forEach(note => {
 //         console.log(note)

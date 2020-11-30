@@ -1,7 +1,9 @@
-// const { response } = require('express');
+require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const app = express();
+const Person = require('./models/person');
+
 
 // Configure morgan to log body of POST request
 morgan.token('person', (req) => {
@@ -9,17 +11,13 @@ morgan.token('person', (req) => {
     return null
   })
 app.use(express.static('build'))
-
 app.use(express.json());
-// app.use(morgan.token('type', function (req, res){
-//     return req.headers['content-type']
-// }))
+
 app.use(
     morgan(
       ':method :url :status :res[content-length] - :response-time ms :person',
     ),
   )
-
 
 let persons = [
     {
@@ -45,30 +43,37 @@ let persons = [
 ]
 
 app.get('/api/persons', (request, response) => {
-    response.json(persons);
+    Person.find({}).then(persons => {
+        response.json(persons)
+      })
 });
 
 app.get(`/api/persons/:id`, (request, response) => {
     const id = Number(request.params.id);
-    const person = persons.find(el => el.id === id);
-    
-    if(person){
-        response.json(person);
-    } else{
-        response.status(404).end();
-    }
+     Person.findById(request.params.id).then(person => {
+        if(person){
+            console.log(person);
+            response.json(person);
+        } else{
+            response.status(404).end();
+        }
+      })
 });
 
-app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id);
-    persons = persons.filter(el => el.id !== id);
-
-    response.status(204).end();
+app.delete('/api/persons/:id', (request, response, next) => {
+    Person.findByIdAndRemove(request.params.id)
+    .then(result => {
+        response.status(204).end()
+    })
+    .catch(error => next(error))
 })
 
 app.get('/info', (request, response) => {
-    response.send(`<div>Phonebook has info for ${persons.length} people</div>
-    <div>${new Date()} </div>`);
+    Person.countDocuments({}).then(el => {
+        response.send(`<div>Phonebook has info for ${el} people</div>
+    <div>${new Date()} </div>`)
+    })
+    
 });
 
 app.post('/api/persons', (request, response) => {
@@ -82,17 +87,32 @@ app.post('/api/persons', (request, response) => {
         })
     }
 
-    const person = {
+    const person = new Person( {
         name: body.name,
+        date: new Date(),
         number: body.number,
-        id: Math.floor(Math.random() * 10000),
-    }
+    })
 
-    // response.json(persons.concat(person));
-    response.json(person);
+    person.save().then(savedPerson => {
+        response.json(savedPerson);
+    })
 })
 
-const PORT = process.env.PORT || 3001;
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body;
+    const person = {
+        name: body.name,
+        number: body.number
+    }
+
+    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then(updatedPerson => {
+        response.json(updatedPerson)
+    })
+    .catch(error => next(error));
+})
+
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 })
