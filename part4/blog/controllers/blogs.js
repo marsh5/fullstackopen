@@ -17,6 +17,6 @@ blogsRouter.get('/', (request, response) => {
       .then(result => {
         response.status(201).json(result)
       })
-  })
+  });
 
   module.exports = blogsRouter;
