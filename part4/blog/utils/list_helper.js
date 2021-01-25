@@ -16,8 +16,10 @@ const dummy = (blogs) => {
         return acc;
       }
     })
-    let unwrap = ({title, author, likes}) => ({title, author, likes});
-    return unwrap(fav);
+    let {title, author, likes} = fav;
+    //destructuring: so title = fav.title;
+    //then return an object using object ES6 object initializer/shorthand
+    return {title, author, likes};
   }
 
   const mostBlogs = (blogs) => {
@@ -55,7 +57,7 @@ const dummy = (blogs) => {
         max = parseInt(prop);
       }
     }
-    
+
     return {
       author: obj[max],
       likes: max
