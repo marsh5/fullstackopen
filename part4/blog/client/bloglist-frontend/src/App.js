@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import ShowBlogs from './components/ShowBlogs'
 import LoginForm from './components/LoginForm'
 import CreateBlog from './components/CreateBlog'
+import Toggable from './components/Toggable'
 import blogService from './services/blogs'
 import loginService from './services/login'
 
@@ -10,12 +11,15 @@ const App = () => {
   const [blogs, setBlogs] = useState([])
   const [user, setUser] = useState(null);
   const [successPost, setSuccessPost] = useState(null);
-  const [errorMessage, setErrorMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null);
 
-  useEffect(() => {
-    blogService.getAll().then(blogs =>
-      setBlogs( blogs )
-    )  
+  const noteFormRef = useRef();
+
+  useEffect(async () => {
+   const blogs = await blogService.getAll()
+   blogs.sort((a,b) => b.likes - a.likes ) 
+   setBlogs( blogs )
+    
   }, [])
 
   useEffect(() => {
@@ -57,6 +61,7 @@ const App = () => {
     const blogObject = {
         title, author, url
       }
+      noteFormRef.current.toggleVisibility()
 
       try {
         const res = await blogService.createBlog(blogObject);
@@ -87,6 +92,21 @@ const App = () => {
     }
   }
 
+  const createNoteForm = () => (
+    <Toggable buttonLabel = "new note" ref={noteFormRef}>
+      <CreateBlog createNew={createNew} />
+    </Toggable>
+  )
+
+  const handleBlogUpdate = (blog, id) => {
+    setBlogs(blogs.map((el) => (el.id !== id ? el : blog)));
+  }
+
+  const handleBlogRemove = id => {
+    setBlogs(blogs.filter(el => el.id !== id))
+  }
+
+
 
   return (
     <>
@@ -96,10 +116,10 @@ const App = () => {
       <>
       <h2>blogs</h2>
       <p>{user.name} is logged in <button onClick={handleLogout}>logout</button></p>
-      <CreateBlog createNew={createNew}/>
+      {createNoteForm()}
       <ShowSuccess />
       <div>&nbsp;</div>
-    <ShowBlogs blogs={blogs} />
+    <ShowBlogs blogs={blogs} handleBlogUpdate={handleBlogUpdate} handleBlogRemove={handleBlogRemove} />
     </>
     }
     

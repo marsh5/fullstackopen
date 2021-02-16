@@ -121,10 +121,21 @@ blogsRouter.get('/', async (request, response) => {
 
   blogsRouter.put('/:id', async (request, response, next) => {
     const body = request.body;
+    let decodedToken;
+    console.log(request.token);
+    try {
+        decodedToken = jwt.verify(request.token, process.env.SECRET);
+    } catch (error) {
+        return response.status(401).json({
+            error: 'invalid token'
+        })
+    }
+
     console.log(body);
     const blog = {
         title: body.title,
         author: body.author,
+        url: body.url,
         likes: body.likes,
     }
 
